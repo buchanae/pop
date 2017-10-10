@@ -1,8 +1,64 @@
 package fasta
 
+import (
+  "bufio"
+  "io"
+)
+
 type Record struct {
   Header string
   Seq string
+}
+
+type Scanner struct {
+}
+
+func NewScanner(r io.Reader) *Scanner {
+}
+
+func (s *Scanner) Scan() bool {
+  if s.err != nil {
+    return false
+  }
+  b := s.scan.Scan()
+  if !b {
+    return false
+  }
+
+  s.lineno++
+  t := s.scan.Text()
+
+  // Skip blank lines
+  t = strings.TrimSpace(t)
+  if len(t) == 0 {
+    return s.Scan()
+  }
+
+  // Header line
+  if t[0] == '>' {
+    rec := Record{Header: t}
+    for s.scan.Scan() {
+      rec.Seq += s.scan.Text()
+    }
+
+    if err := s.scan.Err(); err != nil {
+      s.err = err
+      return false
+    }
+    s.rec = &rec
+  }
+
+  // unexpected line, error
+  s.err = fmt.Errorf("line %d, parse error, unexpected line", s.lineno)
+  return false
+}
+
+func (s *Scanner) Record() *Record {
+  return s.rec
+}
+
+func (s *Scanner) Err() error {
+  return s.err
 }
 
 // TODO map to upper case
